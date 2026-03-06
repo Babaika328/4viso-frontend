@@ -1,3 +1,3 @@
 <template>
-  <router-view />
+  <h1>Audit Log</h1>
 </template>
