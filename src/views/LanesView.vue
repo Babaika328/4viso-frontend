@@ -1,0 +1,1 @@
+<template><div class="p-6"><h1 class="text-lg font-semibold">Lanes</h1></div></template>

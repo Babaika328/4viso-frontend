@@ -10,15 +10,46 @@ const routes = [
   {
     path: '/login',
     component: AuthView,
-    meta: { guestOnly: true }   // logged in users can't go back to login
+    meta: { guestOnly: true }
   },
   {
-    path: '/dashboard',
-    component: () => import('../views/DashboardView.vue'),
-    meta: { requiresAuth: true }
+    path: '/',
+    component: () => import('../components/layout/AppLayout.vue'),
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: 'dashboard',
+        component: () => import('../views/DashboardView.vue'),
+      },
+      {
+        path: 'lanes',
+        component: () => import('../views/LanesView.vue'),
+      },
+      {
+        path: 'lanes/:id',
+        component: () => import('../views/LaneDetailView.vue'),
+      },
+      {
+        path: 'builder',
+        component: () => import('../views/BuilderView.vue'),
+      },
+      {
+        path: 'caretakers',
+        component: () => import('../views/CaretakersView.vue'),
+      },
+      {
+        path: 'analytics',
+        component: () => import('../views/AnalyticsView.vue'),
+      },
+      {
+        path: 'admin',
+        component: () => import('../views/AdminView.vue'),
+        meta: { requiresAdmin: true }
+      },
+    ]
   },
   {
-    path: '/:pathMatch(.*)*',   // 404
+    path: '/:pathMatch(.*)*',
     redirect: '/dashboard'
   }
 ]
@@ -37,6 +68,11 @@ router.beforeEach((to, from, next) => {
   }
 
   if (to.meta.guestOnly && auth.isLoggedIn) {
+    next('/dashboard')
+    return
+  }
+
+  if (to.meta.requiresAdmin && !auth.isAdmin) {
     next('/dashboard')
     return
   }
