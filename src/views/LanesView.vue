@@ -55,7 +55,10 @@
     </div>
 
     <!-- Empty -->
-    <div v-else-if="filtered.length === 0" class="bg-white border-2 border-dashed border-gray-200 rounded-xl py-16 text-center">
+    <div
+      v-else-if="filtered.length === 0"
+      class="bg-white border-2 border-dashed border-gray-200 rounded-xl py-16 text-center"
+    >
       <div class="text-sm text-gray-400 mb-3">
         {{ lanesStore.lanes.length === 0 ? 'No lanes yet' : 'No lanes match your filters' }}
       </div>
@@ -84,22 +87,19 @@
         @click="router.push(`/lanes/${lane.id}`)"
       >
         <div class="flex items-stretch">
-
-          <!-- Status bar -->
           <div class="w-1 flex-shrink-0" :class="statusBar(lane.status)"></div>
-
           <div class="flex-1 px-5 py-4 flex items-center gap-5">
 
             <!-- Main info -->
             <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-3 mb-1.5">
+              <div class="flex items-center gap-2 mb-1.5 flex-wrap">
                 <span class="text-sm font-semibold text-gray-800 truncate">{{ lane.name }}</span>
                 <span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 uppercase tracking-wider flex-shrink-0">
                   {{ CARGO_LABELS[lane.cargo_type] || lane.cargo_type }}
                 </span>
                 <TempBadge v-if="lane.temp_min" :min="lane.temp_min" :max="lane.temp_max" :unit="lane.temp_unit" />
               </div>
-              <div class="flex items-center gap-2 text-xs text-gray-400">
+              <div class="flex items-center gap-2 text-xs text-gray-400 mb-2">
                 <span>{{ originName(lane) }}</span>
                 <span>→</span>
                 <span>{{ destinationName(lane) }}</span>
@@ -108,13 +108,26 @@
                 <span class="text-gray-200">·</span>
                 <span>{{ lane.transit || '—' }}</span>
               </div>
+              <!-- Risk factor tags -->
+              <RiskFactorTags :factors="getLaneRiskFactors(lane)" />
             </div>
 
-            <!-- Risk + status -->
+            <!-- Right side -->
             <div class="flex items-center gap-4 flex-shrink-0">
+              <!-- Mode badges -->
+              <div class="flex gap-1">
+                <span
+                  v-for="mode in laneModes(lane)"
+                  :key="mode"
+                  class="text-[9px] font-bold px-2 py-0.5 rounded-full border"
+                  :class="modeClass(mode)"
+                >
+                  {{ mode }}
+                </span>
+              </div>
               <RiskBadge :risk="lane.risk" />
               <StatusTag :status="lane.status" />
-              <span class="text-xs text-gray-300">{{ lane.updated_at ? timeAgo(lane.updated_at) : '' }}</span>
+              <span class="text-xs text-gray-300">{{ timeAgo(lane.updated_at) }}</span>
             </div>
 
             <!-- Actions -->
@@ -178,19 +191,21 @@ import { useRouter }                from 'vue-router'
 import { useAuthStore }             from '../stores/auth.js'
 import { useLanesStore }            from '../stores/lanes.js'
 import { lanesApi }                 from '../api/lanes.js'
+import { getLaneRiskFactors }       from '../utils/riskFactors.js'
 import RiskBadge                    from '../components/ui/RiskBadge.vue'
 import StatusTag                    from '../components/ui/StatusTag.vue'
 import TempBadge                    from '../components/ui/TempBadge.vue'
+import RiskFactorTags               from '../components/ui/RiskFactorTags.vue'
 
 const router     = useRouter()
 const auth       = useAuthStore()
 const lanesStore = useLanesStore()
 
-const search      = ref('')
-const cargoFilter = ref('')
-const activeStatus= ref('')
-const myLanes     = ref(false)
-const deleteTarget= ref(null)
+const search       = ref('')
+const cargoFilter  = ref('')
+const activeStatus = ref('')
+const myLanes      = ref(false)
+const deleteTarget = ref(null)
 
 const CARGO_LABELS = {
   pharma: 'Pharmaceutical',
@@ -213,10 +228,10 @@ const filtered = computed(() => {
 })
 
 const statusFilters = computed(() => [
-  { value: '',     label: 'All',       count: lanesStore.lanes.length,                          activeClass: 'border-gray-400 text-gray-600 bg-gray-50'   },
-  { value: 'ok',   label: 'Compliant', count: lanesStore.lanes.filter(l=>l.status==='ok').length,   activeClass: 'border-green-400 text-green-600 bg-green-50'  },
-  { value: 'warn', label: 'Warning',   count: lanesStore.lanes.filter(l=>l.status==='warn').length, activeClass: 'border-amber-400 text-amber-600 bg-amber-50'  },
-  { value: 'bad',  label: 'Issues',    count: lanesStore.lanes.filter(l=>l.status==='bad').length,  activeClass: 'border-red-400   text-red-600   bg-red-50'    },
+  { value: '',     label: 'All',       count: lanesStore.lanes.length,                              activeClass: 'border-gray-400 text-gray-600 bg-gray-50'   },
+  { value: 'ok',   label: 'Compliant', count: lanesStore.lanes.filter(l=>l.status==='ok').length,   activeClass: 'border-green-400 text-green-600 bg-green-50' },
+  { value: 'warn', label: 'Warning',   count: lanesStore.lanes.filter(l=>l.status==='warn').length, activeClass: 'border-amber-400 text-amber-600 bg-amber-50' },
+  { value: 'bad',  label: 'Issues',    count: lanesStore.lanes.filter(l=>l.status==='bad').length,  activeClass: 'border-red-400 text-red-600 bg-red-50'       },
 ])
 
 function toggleStatus(val) {
@@ -238,16 +253,27 @@ function destinationName(lane) {
   return lane.lane_nodes?.[lane.lane_nodes.length - 1]?.node?.company || '—'
 }
 
+function laneModes(lane) {
+  return [...new Set(lane.lane_legs?.filter(l => l.carrier).map(l => l.carrier.mode) || [])]
+}
+
+function modeClass(mode) {
+  if (mode === 'Air')  return 'bg-blue-50 text-blue-600 border-blue-100'
+  if (mode === 'Sea')  return 'bg-teal-50 text-teal-600 border-teal-100'
+  return 'bg-amber-50 text-amber-600 border-amber-100'
+}
+
 function statusBar(status) {
   return status === 'ok' ? 'bg-green-400' : status === 'warn' ? 'bg-amber-400' : 'bg-red-400'
 }
 
 function timeAgo(dateStr) {
-  const diff = Date.now() - new Date(dateStr).getTime()
+  if (!dateStr) return ''
+  const diff  = Date.now() - new Date(dateStr).getTime()
   const mins  = Math.floor(diff / 60000)
-  if (mins < 60)   return `${mins}m ago`
+  if (mins < 60)  return `${mins}m ago`
   const hours = Math.floor(mins / 60)
-  if (hours < 24)  return `${hours}h ago`
+  if (hours < 24) return `${hours}h ago`
   return `${Math.floor(hours / 24)}d ago`
 }
 
