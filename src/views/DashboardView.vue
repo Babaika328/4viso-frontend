@@ -239,7 +239,7 @@ const stats = computed(() => {
 })
 
 const riskDist = computed(() => {
-  const r = store.risk || analyticsStore.risk
+  const r = analyticsStore.risk
   if (!r) return []
   const total = r.low + r.medium + r.high || 1
   return [

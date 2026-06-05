@@ -207,6 +207,8 @@
       @click.self="detailTarget = null"
     >
       <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
+
+        <!-- Header -->
         <div
           class="px-6 py-5 border-b"
           :style="{ background: typeBg(detailTarget.type), borderColor: typeColor(detailTarget.type) + '33' }"
@@ -234,16 +236,33 @@
             </div>
           </div>
         </div>
+
         <div class="overflow-y-auto flex-1 p-6 grid grid-cols-2 gap-4">
+
+          <!-- Contact -->
           <div class="bg-gray-50 rounded-xl p-4">
             <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Contact</div>
             <div class="space-y-2">
-              <div><div class="text-[10px] text-gray-400">Name</div><div class="text-sm font-medium">{{ detailTarget.contact_name || '—' }}</div></div>
-              <div><div class="text-[10px] text-gray-400">Phone</div><div class="text-sm text-teal-600">{{ detailTarget.contact_phone || '—' }}</div></div>
-              <div><div class="text-[10px] text-gray-400">Email</div><div class="text-sm text-teal-600 break-all">{{ detailTarget.contact_email || '—' }}</div></div>
-              <div><div class="text-[10px] text-gray-400">Available</div><div class="text-sm font-medium text-green-600">{{ detailTarget.available || '—' }}</div></div>
+              <div>
+                <div class="text-[10px] text-gray-400">Name</div>
+                <div class="text-sm font-medium">{{ detailTarget.contact_name || '—' }}</div>
+              </div>
+              <div>
+                <div class="text-[10px] text-gray-400">Phone</div>
+                <div class="text-sm text-teal-600">{{ detailTarget.contact_phone || '—' }}</div>
+              </div>
+              <div>
+                <div class="text-[10px] text-gray-400">Email</div>
+                <div class="text-sm text-teal-600 break-all">{{ detailTarget.contact_email || '—' }}</div>
+              </div>
+              <div>
+                <div class="text-[10px] text-gray-400">Available</div>
+                <div class="text-sm font-medium text-green-600">{{ detailTarget.available || '—' }}</div>
+              </div>
             </div>
           </div>
+
+          <!-- Responsibilities -->
           <div class="bg-gray-50 rounded-xl p-4">
             <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Responsibilities</div>
             <div class="space-y-1.5">
@@ -252,13 +271,19 @@
                 :key="r"
                 class="flex items-center gap-2 text-sm text-gray-700"
               >
-                <div class="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                  :style="{ background: typeColor(detailTarget.type) }"></div>
+                <div
+                  class="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  :style="{ background: typeColor(detailTarget.type) }"
+                ></div>
                 {{ r }}
               </div>
-              <div v-if="detailTarget.responsibilities.length === 0" class="text-sm text-gray-400 italic">None listed</div>
+              <div v-if="detailTarget.responsibilities.length === 0" class="text-sm text-gray-400 italic">
+                None listed
+              </div>
             </div>
           </div>
+
+          <!-- Certifications -->
           <div class="bg-gray-50 rounded-xl p-4">
             <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Certifications</div>
             <div class="flex flex-wrap gap-1.5">
@@ -267,17 +292,60 @@
                 :key="c"
                 class="text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-100"
               >{{ c }}</span>
-              <span v-if="detailTarget.certs.length === 0" class="text-sm text-gray-400 italic">None listed</span>
+              <span v-if="detailTarget.certs.length === 0" class="text-sm text-gray-400 italic">
+                None listed
+              </span>
             </div>
           </div>
+
+          <!-- Notes -->
           <div v-if="detailTarget.notes" class="bg-gray-50 rounded-xl p-4">
             <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Notes</div>
             <div class="text-sm text-gray-600 leading-relaxed">{{ detailTarget.notes }}</div>
           </div>
+
+          <!-- Assigned lanes -->
+          <div class="bg-gray-50 rounded-xl p-4 col-span-2">
+            <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+              Lanes through this location
+            </div>
+            <div v-if="detailLanesLoading" class="text-xs text-gray-400 text-center py-3">
+              Loading...
+            </div>
+            <div v-else-if="detailLanes.length === 0" class="text-xs text-gray-400 italic">
+              No lanes pass through this node
+            </div>
+            <div v-else class="space-y-2">
+              <div
+                v-for="lane in detailLanes"
+                :key="lane.id"
+                class="flex items-center justify-between py-2 border-b border-gray-200 last:border-0"
+              >
+                <span class="text-sm text-gray-700 truncate flex-1">{{ lane.name }}</span>
+                <div class="flex items-center gap-2 flex-shrink-0 ml-3">
+                  <span
+                    class="text-[10px] font-medium px-2 py-0.5 rounded-full"
+                    :class="lane.status === 'ok'
+                      ? 'bg-green-50 text-green-700'
+                      : lane.status === 'warn'
+                        ? 'bg-amber-50 text-amber-700'
+                        : 'bg-red-50 text-red-700'"
+                  >
+                    {{ lane.status === 'ok' ? 'Compliant' : lane.status === 'warn' ? 'Warning' : 'Issues' }}
+                  </span>
+                  <span class="text-xs text-gray-400">{{ lane.transit || '—' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
+
         <div class="border-t border-gray-100 px-6 py-3 flex justify-end gap-2">
-          <button @click="detailTarget = null"
-            class="text-sm px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition">
+          <button
+            @click="detailTarget = null"
+            class="text-sm px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition"
+          >
             Close
           </button>
           <button
@@ -448,8 +516,10 @@
         <div class="border-t border-gray-100 px-6 py-3 flex items-center justify-between">
           <span v-if="formError" class="text-xs text-red-500">{{ formError }}</span>
           <div class="flex gap-2 ml-auto">
-            <button @click="showForm = false"
-              class="text-sm px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition">
+            <button
+              @click="showForm = false"
+              class="text-sm px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition"
+            >
               Cancel
             </button>
             <button
@@ -476,12 +546,16 @@
           "{{ confirmDeleteTarget.company }}" will be removed.
         </div>
         <div class="flex justify-end gap-3">
-          <button @click="confirmDeleteTarget = null"
-            class="text-sm px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition">
+          <button
+            @click="confirmDeleteTarget = null"
+            class="text-sm px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition"
+          >
             Cancel
           </button>
-          <button @click="handleDelete"
-            class="text-sm px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition">
+          <button
+            @click="handleDelete"
+            class="text-sm px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition"
+          >
             Remove
           </button>
         </div>
@@ -496,6 +570,7 @@ import { ref, computed, onMounted, reactive } from 'vue'
 import { useAuthStore }        from '../stores/auth.js'
 import { useCaretakersStore }  from '../stores/caretakers.js'
 import { useNodesStore }       from '../stores/nodes.js'
+import { caretakersApi }       from '../api/caretakers.js'
 
 const auth       = useAuthStore()
 const store      = useCaretakersStore()
@@ -505,6 +580,8 @@ const search              = ref('')
 const activeType          = ref('')
 const nodeFilter          = ref('')
 const detailTarget        = ref(null)
+const detailLanes         = ref([])
+const detailLanesLoading  = ref(false)
 const confirmDeleteTarget = ref(null)
 const showForm            = ref(false)
 const editTarget          = ref(null)
@@ -621,8 +698,18 @@ function clearFilters() {
   nodeFilter.value  = ''
 }
 
-function openDetail(ct) {
-  detailTarget.value = ct
+async function openDetail(ct) {
+  detailTarget.value       = ct
+  detailLanes.value        = []
+  detailLanesLoading.value = true
+  try {
+    const res         = await caretakersApi.lanes(ct.id)
+    detailLanes.value = res.data
+  } catch {
+    detailLanes.value = []
+  } finally {
+    detailLanesLoading.value = false
+  }
 }
 
 function openForm(ct) {
@@ -662,7 +749,7 @@ function toggleCert(c) {
 }
 
 async function submitForm() {
-  formError.value    = ''
+  formError.value      = ''
   formSubmitting.value = true
   try {
     const payload = { ...formData }

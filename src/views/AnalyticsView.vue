@@ -84,7 +84,9 @@
               ></div>
             </div>
           </div>
-          <div v-if="cargoDist.length === 0" class="text-xs text-gray-400 text-center py-4">No lanes yet</div>
+          <div v-if="cargoDist.length === 0" class="text-xs text-gray-400 text-center py-4">
+            No lanes yet
+          </div>
         </div>
         <div v-else class="text-xs text-gray-400 text-center py-6">No data</div>
       </div>
@@ -93,7 +95,7 @@
 
     <div class="grid grid-cols-2 gap-5">
 
-      <!-- Lane status breakdown -->
+      <!-- Lane compliance -->
       <div class="bg-white border border-gray-200 rounded-xl p-5">
         <div class="text-sm font-semibold text-gray-800 mb-4">Lane compliance</div>
         <div v-if="store.summary" class="space-y-3">
@@ -167,16 +169,30 @@
       </div>
     </div>
 
+    <!-- World map -->
+    <div class="bg-white border border-gray-200 rounded-xl p-5">
+      <div class="text-sm font-semibold text-gray-800 mb-3">
+        Network map — {{ nodesStore.nodes.length }} nodes
+      </div>
+      <WorldMap :nodes="nodesStore.nodes" />
+    </div>
+
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useAnalyticsStore }   from '../stores/analytics.js'
+import { useNodesStore }       from '../stores/nodes.js'
+import WorldMap                from '../components/ui/WorldMap.vue'
 
-const store = useAnalyticsStore()
+const store      = useAnalyticsStore()
+const nodesStore = useNodesStore()
 
-onMounted(() => store.fetchAll())
+onMounted(() => {
+  store.fetchAll()
+  nodesStore.fetchNodes()
+})
 
 const CARGO_LABELS = {
   pharma: 'Pharmaceutical',
@@ -198,11 +214,11 @@ const summaryStats = computed(() => {
   const s = store.summary
   if (!s) return Array(5).fill({ label: '—', value: '—' })
   return [
-    { label: 'Total lanes',   value: s.total_lanes                              },
-    { label: 'Compliant',     value: s.ok_lanes,   color: 'text-green-600'      },
-    { label: 'Warnings',      value: s.warn_lanes, color: 'text-amber-500'      },
-    { label: 'Issues',        value: s.bad_lanes,  color: 'text-red-500'        },
-    { label: 'Avg risk',      value: s.avg_risk ?? '—', color: riskColor(s.avg_risk) },
+    { label: 'Total lanes', value: s.total_lanes                                   },
+    { label: 'Compliant',   value: s.ok_lanes,   color: 'text-green-600'           },
+    { label: 'Warnings',    value: s.warn_lanes, color: 'text-amber-500'           },
+    { label: 'Issues',      value: s.bad_lanes,  color: 'text-red-500'             },
+    { label: 'Avg risk',    value: s.avg_risk ?? '—', color: riskColor(s.avg_risk) },
   ]
 })
 
@@ -246,9 +262,9 @@ const complianceDist = computed(() => {
   if (!s) return []
   const total = s.total_lanes || 1
   return [
-    { label: 'Compliant',     desc: 'All certs valid, no issues',   value: s.ok_lanes,   pct: pct(s.ok_lanes, total),   color: 'text-green-600', barColor: 'bg-green-400', borderClass: 'border-green-100 bg-green-50/30' },
-    { label: 'Warning',       desc: 'Certs expiring or minor gaps',  value: s.warn_lanes, pct: pct(s.warn_lanes, total), color: 'text-amber-600', barColor: 'bg-amber-400', borderClass: 'border-amber-100 bg-amber-50/30' },
-    { label: 'Non-compliant', desc: 'Missing certs or high risk',    value: s.bad_lanes,  pct: pct(s.bad_lanes, total),  color: 'text-red-600',   barColor: 'bg-red-400',   borderClass: 'border-red-100 bg-red-50/30'     },
+    { label: 'Compliant',     desc: 'All certs valid, no issues',  value: s.ok_lanes,   pct: pct(s.ok_lanes, total),   color: 'text-green-600', barColor: 'bg-green-400', borderClass: 'border-green-100 bg-green-50/30' },
+    { label: 'Warning',       desc: 'Certs expiring or minor gaps', value: s.warn_lanes, pct: pct(s.warn_lanes, total), color: 'text-amber-600', barColor: 'bg-amber-400', borderClass: 'border-amber-100 bg-amber-50/30' },
+    { label: 'Non-compliant', desc: 'Missing certs or high risk',   value: s.bad_lanes,  pct: pct(s.bad_lanes, total),  color: 'text-red-600',   barColor: 'bg-red-400',   borderClass: 'border-red-100 bg-red-50/30'    },
   ]
 })
 
