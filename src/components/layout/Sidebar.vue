@@ -60,16 +60,20 @@ const initials = computed(() => {
 })
 
 const NAV = [
-  { path: '/dashboard',  label: 'Dashboard'    },
-  { path: '/builder',    label: 'Lane builder'  },
-  { path: '/lanes',      label: 'My lanes'      },
-  { path: '/caretakers', label: 'Caretakers'    },
-  { path: '/analytics',  label: 'Analytics'     },
-  { path: '/admin',      label: 'Admin', adminOnly: true },
+  { path: '/dashboard',  label: 'Dashboard'                           },
+  { path: '/builder',    label: 'Lane builder', writeOnly: true       },
+  { path: '/lanes',      label: 'My lanes'                            },
+  { path: '/caretakers', label: 'Caretakers'                          },
+  { path: '/analytics',  label: 'Analytics'                           },
+  { path: '/admin',      label: 'Admin',        adminOnly: true       },
 ]
 
 const visibleNav = computed(() =>
-  NAV.filter(item => !item.adminOnly || auth.isAdmin)
+  NAV.filter(item => {
+    if (item.adminOnly && !auth.isAdmin)   return false
+    if (item.writeOnly && !auth.canWrite)  return false
+    return true
+  })
 )
 
 function isActive(path) {

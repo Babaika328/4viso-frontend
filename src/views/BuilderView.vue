@@ -1,5 +1,24 @@
 <template>
-  <div class="flex flex-col h-full overflow-hidden">
+  <!-- Access denied -->
+  <div
+    v-if="!auth.canWrite"
+    class="flex-1 flex items-center justify-center"
+  >
+    <div class="text-center">
+      <div class="text-sm font-semibold text-gray-800 mb-2">Access restricted</div>
+      <div class="text-xs text-gray-400 mb-4">
+        Your role ({{ auth.role }}) cannot create lanes. Contact an admin.
+      </div>
+      <RouterLink
+        to="/lanes"
+        class="text-sm bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600 transition"
+      >
+        View lanes
+      </RouterLink>
+    </div>
+  </div>
+
+  <div v-else class="flex flex-col h-full overflow-hidden">
 
     <!-- Top bar -->
     <div class="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between flex-shrink-0">
@@ -255,17 +274,13 @@
                       {{ node.country }} · {{ node.region }}
                     </div>
                     <RiskBadge :risk="node.risk" size="sm" />
-                    <!-- Cert status -->
                     <div v-if="requirements.length > 0" class="mt-2 border-t pt-2" style="border-color:#2C2F4A">
                       <div
                         v-for="req in requirements" :key="req"
                         class="flex justify-between items-center py-0.5"
                       >
                         <span class="text-[9px]" style="color:#7882A0">{{ req }}</span>
-                        <span
-                          class="text-[10px] font-bold"
-                          :style="{ color: certColor(node.certs?.[req]) }"
-                        >
+                        <span class="text-[10px] font-bold" :style="{ color: certColor(node.certs?.[req]) }">
                           {{ certMark(node.certs?.[req]) }}
                         </span>
                       </div>
@@ -312,7 +327,6 @@
                     <div class="text-[9px] mb-1.5" style="color:#7882A0">
                       {{ selectedCarriers[i].mode }} · {{ selectedCarriers[i].transit }}
                     </div>
-                    <!-- Carrier cert status -->
                     <div v-if="requirements.length > 0" class="flex gap-1 flex-wrap justify-center mb-1.5">
                       <span
                         v-for="req in requirements" :key="req"
@@ -372,10 +386,8 @@
         </div>
       </div>
 
-      <!-- ── Right sidebar ──────────────────────────────── -->
+      <!-- Right sidebar -->
       <div class="w-52 flex-shrink-0 flex flex-col border-l overflow-auto" style="background:#161824; border-color:#20233A">
-
-        <!-- Risk summary -->
         <div class="p-4 border-b" style="border-color:#20233A">
           <div class="text-[9px] font-bold uppercase tracking-wider mb-3" style="color:#3A3F5C">Risk level</div>
           <div class="flex justify-center">
@@ -383,22 +395,18 @@
             <span v-else class="text-xs" style="color:#3A3F5C">—</span>
           </div>
         </div>
-
-        <!-- Live risk factors -->
         <div class="p-4 border-b" style="border-color:#20233A">
           <div class="text-[9px] font-bold uppercase tracking-wider mb-3" style="color:#3A3F5C">Risk factors</div>
           <div v-if="liveRiskFactors.length === 0" class="text-[10px]" style="color:#3A3F5C">None detected</div>
           <div v-else class="space-y-2">
-            <div
-              v-for="(f, i) in liveRiskFactors" :key="i"
-              class="flex items-start gap-2"
-            >
+            <div v-for="(f, i) in liveRiskFactors" :key="i" class="flex items-start gap-2">
               <div
                 class="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1"
                 :style="{ background: f.severity === 'high' ? '#EF4444' : f.severity === 'medium' ? '#F59E0B' : '#10B981' }"
               ></div>
               <div>
-                <div class="text-[10px] font-medium" :style="{ color: f.severity === 'high' ? '#EF4444' : f.severity === 'medium' ? '#F59E0B' : '#10B981' }">
+                <div class="text-[10px] font-medium"
+                  :style="{ color: f.severity === 'high' ? '#EF4444' : f.severity === 'medium' ? '#F59E0B' : '#10B981' }">
                   {{ RF_LABELS[f.type] || f.type }}
                 </div>
                 <div class="text-[9px]" style="color:#3A3F5C">{{ f.detail }}</div>
@@ -406,21 +414,19 @@
             </div>
           </div>
         </div>
-
-        <!-- Route stats -->
         <div class="p-4">
           <div class="text-[9px] font-bold uppercase tracking-wider mb-3" style="color:#3A3F5C">Route stats</div>
           <div class="space-y-2">
             <div
               v-for="stat in routeStats" :key="stat.label"
-              class="flex justify-between items-center py-1 border-b" style="border-color:#20233A"
+              class="flex justify-between items-center py-1 border-b"
+              style="border-color:#20233A"
             >
               <span class="text-[10px]" style="color:#7882A0">{{ stat.label }}</span>
               <span class="text-[10px] font-semibold" style="color:#DDE2F0">{{ stat.value }}</span>
             </div>
           </div>
         </div>
-
       </div>
     </div>
 
@@ -464,6 +470,14 @@
           </div>
         </div>
 
+        <!-- Publish error -->
+        <div
+          v-if="publishError"
+          class="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3"
+        >
+          {{ publishError }}
+        </div>
+
         <div
           class="rounded-xl px-5 py-4 flex items-center justify-between"
           :class="canPublish ? 'bg-teal-50 border border-teal-200' : 'bg-red-50 border border-red-200'"
@@ -489,7 +503,7 @@
       </div>
     </div>
 
-    <!-- ── Node picker modal ──────────────────────────── -->
+    <!-- Node picker modal -->
     <div
       v-if="showNodePicker"
       class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
@@ -539,7 +553,7 @@
       </div>
     </div>
 
-    <!-- ── Carrier picker modal ───────────────────────── -->
+    <!-- Carrier picker modal -->
     <div
       v-if="showCarrierPicker"
       class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
@@ -606,12 +620,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive } from 'vue'
+import { ref, computed, onMounted, reactive }  from 'vue'
 import { useRouter }                           from 'vue-router'
 import { useNodesStore }                       from '../stores/nodes.js'
 import { useCarriersStore }                    from '../stores/carriers.js'
 import { useLanesStore }                       from '../stores/lanes.js'
 import { lanesApi }                            from '../api/lanes.js'
+import { useAuthStore }                        from '../stores/auth.js'
 import RiskBadge                               from '../components/ui/RiskBadge.vue'
 import NodeSearch                              from '../components/nodes/NodeSearch.vue'
 
@@ -619,7 +634,7 @@ const router        = useRouter()
 const nodesStore    = useNodesStore()
 const carriersStore = useCarriersStore()
 const lanesStore    = useLanesStore()
-
+const auth          = useAuthStore()
 const step       = ref(1)
 const publishing = ref(false)
 const steps      = [
@@ -645,6 +660,7 @@ const activeLegIdx      = ref(null)
 const nodeSearch        = ref('')
 const carrierSearch     = ref('')
 const carrierModeFilter = ref('All')
+const publishError = ref('')
 
 const CARGO_TYPES = [
   { value: 'pharma', label: 'Pharmaceutical', reqs: ['GDP'],        temp: '2–8°C'    },
@@ -941,7 +957,8 @@ function resetBuilder() {
 }
 
 async function publishLane() {
-  publishing.value = true
+  publishing.value   = true
+  publishError.value = ''
   try {
     await lanesApi.create({
       name:        form.name,
@@ -962,9 +979,17 @@ async function publishLane() {
     resetBuilder()
     router.push('/lanes')
   } catch (e) {
-    console.error(e)
+    const status = e.response?.status
+    if (status === 403) {
+      publishError.value = 'Your role does not have permission to create lanes.'
+    } else if (status === 422) {
+      publishError.value = 'Invalid lane data. Please check all fields.'
+    } else {
+      publishError.value = 'Something went wrong. Please try again.'
+    }
   } finally {
     publishing.value = false
   }
 }
+
 </script>

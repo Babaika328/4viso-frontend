@@ -32,6 +32,7 @@ const routes = [
       {
         path: 'builder',
         component: () => import('../views/BuilderView.vue'),
+        meta: { requiresWrite: true }
       },
       {
         path: 'caretakers',
@@ -74,6 +75,11 @@ router.beforeEach((to, from, next) => {
 
   if (to.meta.requiresAdmin && !auth.isAdmin) {
     next('/dashboard')
+    return
+  }
+
+  if (to.meta.requiresWrite && !auth.canWrite) {
+    next('/lanes')
     return
   }
 
