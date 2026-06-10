@@ -752,7 +752,12 @@ async function submitForm() {
   formError.value      = ''
   formSubmitting.value = true
   try {
-    const payload = { ...formData }
+    const payload = { ...formData, node_id: Number(formData.node_id) }
+    if (!payload.node_id) {
+      formError.value = 'Please select a node.'
+      formSubmitting.value = false
+      return
+    }
     if (editTarget.value) {
       await store.updateCaretaker(editTarget.value.id, payload)
     } else {
